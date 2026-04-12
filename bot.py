@@ -1,11 +1,7 @@
-import asyncio
-from datetime import datetime, timezone
-
 from tracker import fetch_pairs, normalize_pair
 from filters import passes_filters
 from storage import get_token_by_ca, insert_token, update_token, get_active_tokens
 from posters import post_new_tracking, post_multiplier_update
-from config import SCAN_INTERVAL
 
 def safe_float(value, default=0.0):
     try:
@@ -92,6 +88,9 @@ async def check_multipliers():
             "buys_1h": int(current.get("txns", {}).get("h1", {}).get("buys", 0)),
             "sells_1h": int(current.get("txns", {}).get("h1", {}).get("sells", 0)),
             "raw_json": current["raw_json"],
+            "pumpfun_url": current.get("pumpfun_url", db_token.get("pumpfun_url")),
+            "dex_url": current.get("dex_url", db_token.get("dex_url")),
+            "holders_url": current.get("holders_url", db_token.get("holders_url")),
         }
 
         multiplier = 0
@@ -103,7 +102,7 @@ async def check_multipliers():
 
         for threshold in thresholds:
             if multiplier >= threshold and last_posted < threshold:
-                merged = {**db_token, **updates, "dex_url": current["dex_url"]}
+                merged = {**db_token, **updates}
                 try:
                     await post_multiplier_update(merged, threshold)
                     updates["last_multiplier_posted"] = threshold
@@ -113,13 +112,3 @@ async def check_multipliers():
                 break
 
         update_token(ca, updates)
-
-async def main_loop():
-    while True:
-        print(f"[{datetime.now(timezone.utc).isoformat()}] scanning...")
-        await scan_for_new_tokens()
-        await check_multipliers()
-        await asyncio.sleep(SCAN_INTERVAL)
-
-if __name__ == "__main__":
-    asyncio.run(main_loop())
