@@ -56,7 +56,4 @@ def normalize_pair(pair: dict) -> dict:
         "txns": txns,
         "labels": labels,
         "raw_json": pair,
-    }        "volume": volume,
-        "txns": txns,
-        "raw_json": pair,
     }
