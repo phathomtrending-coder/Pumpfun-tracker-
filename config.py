@@ -13,3 +13,5 @@ MIN_MCAP = float(os.getenv("MIN_MCAP", "1000"))
 MAX_MCAP = float(os.getenv("MAX_MCAP", "500000"))
 MIN_VOL_5M = float(os.getenv("MIN_VOL_5M", "100"))
 MIN_BUYS_1H = int(os.getenv("MIN_BUYS_1H", "1"))
+
+CHANNEL_LINK = "https://t.me/EarlyPhantomTrending"
