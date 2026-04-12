@@ -1,21 +1,39 @@
 import requests
 
-DEX_SEARCH_URL = "https://api.dexscreener.com/latest/dex/search?q=pump.fun"
+SEARCH_QUERIES = [
+    "pump.fun",
+    "pump",
+    "solana pump",
+]
 
 def fetch_pairs():
-    try:
-        response = requests.get(DEX_SEARCH_URL, timeout=20)
-        response.raise_for_status()
-        data = response.json()
-        return data.get("pairs", [])
-    except Exception as e:
-        print(f"fetch_pairs error: {e}")
-        return []
+    pairs = []
+    seen = set()
+
+    for query in SEARCH_QUERIES:
+        url = f"https://api.dexscreener.com/latest/dex/search?q={query}"
+        try:
+            response = requests.get(url, timeout=20)
+            response.raise_for_status()
+            data = response.json()
+
+            for pair in data.get("pairs", []):
+                pair_address = pair.get("pairAddress")
+                if pair_address and pair_address not in seen:
+                    seen.add(pair_address)
+                    pairs.append(pair)
+
+        except Exception as e:
+            print(f"fetch_pairs error for query '{query}': {e}")
+
+    print(f"Fetched {len(pairs)} unique pairs")
+    return pairs
 
 def normalize_pair(pair: dict) -> dict:
     base = pair.get("baseToken", {}) or {}
     txns = pair.get("txns", {}) or {}
     volume = pair.get("volume", {}) or {}
+    labels = pair.get("labels", []) or []
 
     contract_address = base.get("address", "")
     symbol = base.get("symbol", "UNKNOWN")
@@ -35,6 +53,10 @@ def normalize_pair(pair: dict) -> dict:
         "holders_url": holders_url,
         "marketCap": pair.get("marketCap") or 0,
         "volume": volume,
+        "txns": txns,
+        "labels": labels,
+        "raw_json": pair,
+    }        "volume": volume,
         "txns": txns,
         "raw_json": pair,
     }
