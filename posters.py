@@ -60,3 +60,11 @@ async def post_multiplier_update(token: dict, multiple: float):
         disable_web_page_preview=True,
     )
     return msg.message_id
+
+async def post_test_message():
+    msg = await bot.send_message(
+        chat_id=CHANNEL_ID,
+        text="✅ Early Phantom Trending test post from GitHub Actions",
+        disable_web_page_preview=True,
+    )
+    return msg.message_id
