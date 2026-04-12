@@ -1,5 +1,6 @@
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from config import BOT_TOKEN, CHANNEL_ID, CHANNEL_LINK
+from filters import build_scores
 
 bot = Bot(token=BOT_TOKEN)
 
@@ -15,6 +16,8 @@ async def post_new_tracking(token: dict):
     vol_5m = token.get("volume", {}).get("m5", 0)
     vol_1h = token.get("volume", {}).get("h1", 0)
 
+    scores = build_scores(token)
+
     text = (
         f"🚨 <b>NOW TRACKING | ${token['token_symbol']}</b>\n\n"
         f"<b>MCAP:</b> ${format_number(token.get('marketCap', 0))}\n"
@@ -22,7 +25,11 @@ async def post_new_tracking(token: dict):
         f"🟢 <b>Buys 1H:</b> {buys_1h}\n"
         f"🔴 <b>Sells 1H:</b> {sells_1h}\n"
         f"<b>Vol 5M:</b> ${format_number(vol_5m)}\n"
-        f"<b>Vol 1H:</b> ${format_number(vol_1h)}\n\n"
+        f"<b>Vol 1H:</b> ${format_number(vol_1h)}\n"
+        f"<b>Buy/Sell Ratio:</b> {scores['buy_ratio']}\n\n"
+        f"📈 <b>Trend Score:</b> {scores['trend_score']}/100\n"
+        f"🛡️ <b>Safety Score:</b> {scores['safety_score']}/100\n"
+        f"🕵️ <b>Dev Score:</b> {scores['dev_score']}/100\n\n"
         f"<b>CA:</b>\n"
         f"<code>{token['contract_address']}</code>\n\n"
         f"👻 <a href='{CHANNEL_LINK}'>Early Phantom Trending</a>"
@@ -52,10 +59,15 @@ async def post_new_tracking(token: dict):
     return msg.message_id
 
 async def post_multiplier_update(token: dict, multiple: float):
+    scores = build_scores(token)
+
     text = (
         f"📈 <b>${token['token_symbol']} made {multiple:.1f}x since ATL</b>\n\n"
         f"<b>ATL MCAP:</b> ${format_number(token.get('atl_mcap', 0))}\n"
-        f"<b>Current MCAP:</b> ${format_number(token.get('current_mcap', 0))}\n"
+        f"<b>Current MCAP:</b> ${format_number(token.get('current_mcap', 0))}\n\n"
+        f"📈 <b>Trend Score:</b> {scores['trend_score']}/100\n"
+        f"🛡️ <b>Safety Score:</b> {scores['safety_score']}/100\n"
+        f"🕵️ <b>Dev Score:</b> {scores['dev_score']}/100\n\n"
         f"<b>CA:</b>\n"
         f"<code>{token['contract_address']}</code>\n\n"
         f"👻 <a href='{CHANNEL_LINK}'>Early Phantom Trending</a>"
