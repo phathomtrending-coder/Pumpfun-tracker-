@@ -6,12 +6,17 @@ SEARCH_QUERIES = [
     "solana pump",
 ]
 
+DEX_SEARCH_URL = "https://api.dexscreener.com/latest/dex/search"
+DEX_PAIR_URL = "https://api.dexscreener.com/latest/dex/pairs/solana/{pair_address}"
+DEX_TOKEN_PAIRS_URL = "https://api.dexscreener.com/token-pairs/v1/solana/{token_address}"
+
+
 def fetch_pairs():
     pairs = []
     seen = set()
 
     for query in SEARCH_QUERIES:
-        url = f"https://api.dexscreener.com/latest/dex/search?q={query}"
+        url = f"{DEX_SEARCH_URL}?q={query}"
         try:
             response = requests.get(url, timeout=20)
             response.raise_for_status()
@@ -28,6 +33,41 @@ def fetch_pairs():
 
     print(f"Fetched {len(pairs)} unique pairs")
     return pairs
+
+
+def fetch_pair_by_address(pair_address: str):
+    try:
+        url = DEX_PAIR_URL.format(pair_address=pair_address)
+        response = requests.get(url, timeout=20)
+        response.raise_for_status()
+        data = response.json()
+        pairs = data.get("pairs", []) or []
+        return pairs[0] if pairs else None
+    except Exception as e:
+        print(f"fetch_pair_by_address error for {pair_address}: {e}")
+        return None
+
+
+def fetch_best_pair_for_token(token_address: str):
+    try:
+        url = DEX_TOKEN_PAIRS_URL.format(token_address=token_address)
+        response = requests.get(url, timeout=20)
+        response.raise_for_status()
+        pairs = response.json() or []
+
+        if not pairs:
+            return None
+
+        pairs = sorted(
+            pairs,
+            key=lambda p: float(p.get("volume", {}).get("h1") or 0),
+            reverse=True
+        )
+        return pairs[0]
+    except Exception as e:
+        print(f"fetch_best_pair_for_token error for {token_address}: {e}")
+        return None
+
 
 def normalize_pair(pair: dict) -> dict:
     base = pair.get("baseToken", {}) or {}
