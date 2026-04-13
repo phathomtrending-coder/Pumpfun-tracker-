@@ -8,6 +8,21 @@ on:
 jobs:
   run-tracker:
     runs-on: ubuntu-latest
+    env:
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      PUBLIC_CHANNEL_ID: ${{ secrets.PUBLIC_CHANNEL_ID }}
+      WATCHLIST_CHANNEL_ID: ${{ secrets.WATCHLIST_CHANNEL_ID }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SCAN_INTERVAL: "30"
+      WATCHLIST_MIN_MCAP: "4000"
+      WATCHLIST_MAX_MCAP: "35000"
+      WATCHLIST_MIN_VOL_5M: "300"
+      WATCHLIST_MIN_BUYS_1H: "10"
+      PUBLIC_MIN_MCAP: "8000"
+      PUBLIC_MAX_MCAP: "45000"
+      PUBLIC_MIN_VOL_5M: "1200"
+      PUBLIC_MIN_BUYS_1H: "25"
 
     steps:
       - name: Checkout repo
@@ -22,14 +37,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run tracker once
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          SCAN_INTERVAL: "30"
-          MIN_MCAP: "1000"
-          MAX_MCAP: "500000"
-          MIN_VOL_5M: "100"
-          MIN_BUYS_1H: "1"
         run: python run_once.py
