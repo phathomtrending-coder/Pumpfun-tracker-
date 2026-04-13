@@ -1,0 +1,48 @@
+name: Pumpfun Tracker
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+jobs:
+  run-tracker:
+    runs-on: ubuntu-latest
+    env:
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      PUBLIC_CHANNEL_ID: ${{ secrets.PUBLIC_CHANNEL_ID }}
+      WATCHLIST_CHANNEL_ID: ${{ secrets.WATCHLIST_CHANNEL_ID }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SCAN_INTERVAL: "30"
+
+      WATCHLIST_MIN_MCAP: "300"
+      WATCHLIST_MAX_MCAP: "500000"
+      WATCHLIST_MIN_VOL_5M: "0"
+      WATCHLIST_MIN_VOL_1H: "0"
+      WATCHLIST_MIN_BUYS_1H: "0"
+      WATCHLIST_MIN_LIQ: "200"
+
+      PUBLIC_MIN_MCAP: "1500"
+      PUBLIC_MAX_MCAP: "500000"
+      PUBLIC_MIN_VOL_5M: "0"
+      PUBLIC_MIN_VOL_1H: "500"
+      PUBLIC_MIN_BUYS_1H: "1"
+      PUBLIC_MIN_LIQ: "500"
+      PUBLIC_MIN_BUY_SELL_RATIO: "0.50"
+      PUBLIC_MAX_RUG_DNA: "85"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tracker once
+        run: python run_once.py
