@@ -146,7 +146,7 @@ async def check_updates():
 
         try:
             if db_token.get("status") == "watchlist" and not db_token.get("posted_to_public", False):
-                if passes_public_filters(current) and rug["rug_dna_score"] <= 65:
+                if passes_public_filters(current) and rug["rug_dna_score"] <= 85:
                     await post_public_alert(merged)
                     updates["status"] = "promoted"
                     updates["posted_to_public"] = True
