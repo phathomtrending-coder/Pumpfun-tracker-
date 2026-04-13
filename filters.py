@@ -212,9 +212,9 @@ def passes_public_filters(token: dict) -> bool:
             return False
 
         scores = build_scores(token)
-        if scores["trend_score"] < 42:
+        if scores["trend_score"] < 32:
             return False
-        if scores["safety_score"] < 38:
+        if scores["safety_score"] < 28:
             return False
 
         return True
