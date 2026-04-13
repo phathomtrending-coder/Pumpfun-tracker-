@@ -98,7 +98,7 @@ async def check_multipliers():
             multiplier = current_mcap / atl_mcap
 
         last_posted = safe_float(db_token.get("last_multiplier_posted", 0))
-        thresholds = [2, 3, 5, 10]
+        thresholds = [1.5, 2, 3, 5, 10]
 
         for threshold in thresholds:
             if multiplier >= threshold and last_posted < threshold:
@@ -109,6 +109,5 @@ async def check_multipliers():
                     print(f"Posted {threshold}x update for {db_token['token_symbol']}")
                 except Exception as e:
                     print(f"multiplier post error: {e}")
-                break
 
         update_token(ca, updates)
