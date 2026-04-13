@@ -131,16 +131,14 @@ def generate_initial_alert_card(token: dict, scores: dict) -> str:
     base = Image.open(INITIAL_TEMPLATE).convert("RGBA")
     draw = ImageDraw.Draw(base)
 
-    title_font = load_font(46, bold=True)
-    name_font = load_font(24, bold=True)
-    label_font = load_font(20, bold=True)
-    value_font = load_font(24, bold=True)
-    small_font = load_font(18, bold=False)
+    title_font = load_font(42, bold=True)
+    name_font = load_font(22, bold=True)
+    label_font = load_font(18, bold=True)
+    value_font = load_font(22, bold=True)
+    small_font = load_font(16, bold=False)
 
-    logo = fit_logo_circle(download_logo(get_token_logo_url(token)), 180)
-
-    # LOCKED safer placement for current template
-    base.paste(logo, (64, 200), logo)
+    logo = fit_logo_circle(download_logo(get_token_logo_url(token)), 170)
+    base.paste(logo, (70, 210), logo)
 
     symbol = token.get("token_symbol", "UNKNOWN")
     name = token.get("token_name", "Unknown Token")
@@ -153,14 +151,12 @@ def generate_initial_alert_card(token: dict, scores: dict) -> str:
     vol_5m = fmt_money(token.get("volume", {}).get("m5", 0))
     vol_1h = fmt_money(token.get("volume", {}).get("h1", 0))
 
-    # Move name/CA out of branded area
     draw_text(draw, (300, 180), f"${symbol}", title_font, (255, 255, 255, 255))
-    draw_text(draw, (300, 235), short_ca, name_font, (215, 215, 235, 255))
+    draw_text(draw, (300, 230), short_ca, name_font, (215, 215, 235, 255))
 
-    # Stats block
     x1 = 300
     y = 340
-    gap = 54
+    gap = 48
 
     stats = [
         ("MCAP", mcap, (255, 215, 120, 255)),
@@ -171,15 +167,15 @@ def generate_initial_alert_card(token: dict, scores: dict) -> str:
         ("TREND", f"{scores.get('trend_score', 0)}/100", (255, 215, 120, 255)),
         ("SAFETY", f"{scores.get('safety_score', 0)}/100", (120, 255, 170, 255)),
         ("DEV", f"{scores.get('dev_score', 50)}/100", (170, 210, 255, 255)),
-        ("RUG DNA", f"{scores.get('rug_dna_score', 50)}/100", (255, 150, 180, 255)),
+        ("RUG DNA", f"{scores.get('rug_dna_score', 25)}/100", (255, 150, 180, 255)),
     ]
 
     for label, value, color in stats:
         draw_text(draw, (x1, y), label, label_font, color)
-        draw_text(draw, (475, y), value, value_font, (255, 255, 255, 255))
+        draw_text(draw, (470, y), value, value_font, (255, 255, 255, 255))
         y += gap
 
-    draw_text(draw, (300, 815), name[:28], small_font, (255, 255, 255, 255))
+    draw_text(draw, (300, 790), name[:30], small_font, (255, 255, 255, 255))
 
     out_path = os.path.join(OUTPUT_DIR, f"{safe_filename(symbol)}_initial.png")
     base.save(out_path)
@@ -193,33 +189,28 @@ def generate_multiplier_card(token: dict, multiple: float) -> str:
     base = Image.open(template_path).convert("RGBA")
     draw = ImageDraw.Draw(base)
 
-    title_font = load_font(46, bold=True)
-    name_font = load_font(24, bold=True)
-    label_font = load_font(20, bold=True)
-    value_font = load_font(30, bold=True)
+    title_font = load_font(42, bold=True)
+    name_font = load_font(22, bold=True)
+    label_font = load_font(18, bold=True)
+    value_font = load_font(28, bold=True)
 
-    logo = fit_logo_circle(download_logo(get_token_logo_url(token)), 180)
-    base.paste(logo, (64, 200), logo)
+    logo = fit_logo_circle(download_logo(get_token_logo_url(token)), 170)
+    base.paste(logo, (70, 210), logo)
 
     symbol = token.get("token_symbol", "UNKNOWN")
     ca = token.get("contract_address", "")
     short_ca = f"{ca[:8]}...{ca[-6:]}" if len(ca) > 16 else ca
 
-    # IMPORTANT: called MC should be initial posted MC, not atl
     called_mcap = fmt_money(token.get("initial_mcap", 0))
     now_mcap = fmt_money(token.get("current_mcap", 0))
     label = milestone_label_from_multiple(multiple)
 
-    # Safer text positions
     draw_text(draw, (300, 180), f"${symbol}", title_font, (255, 255, 255, 255))
-    draw_text(draw, (300, 235), short_ca, name_font, (215, 215, 235, 255))
-
-    # Numbers are already on art template; we only reinforce cleanly if needed
-    draw_text(draw, (360, 640), "Called MC", label_font, (255, 255, 255, 255))
-    draw_text(draw, (360, 690), called_mcap, value_font, (255, 255, 255, 255))
-
-    draw_text(draw, (700, 640), "Now MC", label_font, (255, 255, 255, 255))
-    draw_text(draw, (700, 690), now_mcap, value_font, (255, 255, 255, 255))
+    draw_text(draw, (300, 230), short_ca, name_font, (215, 215, 235, 255))
+    draw_text(draw, (355, 635), "Called MC", label_font, (255, 255, 255, 255))
+    draw_text(draw, (355, 685), called_mcap, value_font, (255, 255, 255, 255))
+    draw_text(draw, (690, 635), "Now MC", label_font, (255, 255, 255, 255))
+    draw_text(draw, (690, 685), now_mcap, value_font, (255, 255, 255, 255))
 
     out_path = os.path.join(
         OUTPUT_DIR,
