@@ -1,7 +1,26 @@
-from tracker import fetch_pairs, fetch_pair_by_address, fetch_best_pair_for_token, normalize_pair
-from filters import passes_filters, passes_watchlist_filters, build_scores, build_rug_dna
-from storage import get_token_by_ca, insert_token, update_token, get_active_tokens
-from posters import post_watchlist_alert, post_public_alert, post_multiplier_update
+from tracker import (
+    fetch_pairs,
+    fetch_pair_by_address,
+    fetch_best_pair_for_token,
+    normalize_pair,
+)
+from filters import (
+    passes_watchlist_filters,
+    passes_public_filters,
+    build_scores,
+    build_rug_dna,
+)
+from storage import (
+    get_token_by_ca,
+    insert_token,
+    update_token,
+    get_active_tokens,
+)
+from posters import (
+    post_watchlist_alert,
+    post_public_alert,
+    post_multiplier_update,
+)
 
 
 def safe_float(value, default=0.0):
@@ -11,13 +30,20 @@ def safe_float(value, default=0.0):
         return default
 
 
+def choose_highest_new_threshold(multiplier: float, last_posted: float):
+    thresholds = [10, 5, 3, 2, 1.5]
+    for threshold in thresholds:
+        if multiplier >= threshold and last_posted < threshold:
+            return threshold
+    return None
+
+
 async def scan_for_new_tokens():
     pairs = fetch_pairs()
 
     for pair in pairs:
         token = normalize_pair(pair)
         ca = token.get("contract_address")
-
         if not ca:
             continue
 
@@ -30,41 +56,41 @@ async def scan_for_new_tokens():
 
         scores = build_scores(token)
         rug = build_rug_dna(token)
+        current_mcap = safe_float(token.get("marketCap"))
+
+        record = {
+            "token_name": token["token_name"],
+            "token_symbol": token["token_symbol"],
+            "contract_address": token["contract_address"],
+            "pair_address": token["pair_address"],
+            "dex_url": token["dex_url"],
+            "pumpfun_url": token["pumpfun_url"],
+            "holders_url": token["holders_url"],
+            "status": "watchlist",
+            "posted_to_watchlist": True,
+            "posted_to_public": False,
+            "initial_mcap": current_mcap,
+            "atl_mcap": current_mcap,
+            "current_mcap": current_mcap,
+            "highest_mcap": current_mcap,
+            "volume_5m": safe_float(token.get("volume", {}).get("m5")),
+            "volume_1h": safe_float(token.get("volume", {}).get("h1")),
+            "buys_1h": int(token.get("txns", {}).get("h1", {}).get("buys", 0)),
+            "sells_1h": int(token.get("txns", {}).get("h1", {}).get("sells", 0)),
+            "last_multiplier_posted": 0,
+            "active": True,
+            "trend_score": scores["trend_score"],
+            "safety_score": scores["safety_score"],
+            "dev_score": scores["dev_score"],
+            "rug_dna_score": rug["rug_dna_score"],
+            "risk_flags": rug["risk_flags"],
+            "raw_json": token["raw_json"],
+        }
 
         try:
-            record = {
-                "token_name": token["token_name"],
-                "token_symbol": token["token_symbol"],
-                "contract_address": token["contract_address"],
-                "pair_address": token["pair_address"],
-                "dex_url": token["dex_url"],
-                "pumpfun_url": token["pumpfun_url"],
-                "holders_url": token["holders_url"],
-                "status": "watchlist",
-                "posted_to_watchlist": True,
-                "posted_to_public": False,
-                "initial_mcap": safe_float(token.get("marketCap")),
-                "atl_mcap": safe_float(token.get("marketCap")),
-                "current_mcap": safe_float(token.get("marketCap")),
-                "highest_mcap": safe_float(token.get("marketCap")),
-                "volume_5m": safe_float(token.get("volume", {}).get("m5")),
-                "volume_1h": safe_float(token.get("volume", {}).get("h1")),
-                "buys_1h": int(token.get("txns", {}).get("h1", {}).get("buys", 0)),
-                "sells_1h": int(token.get("txns", {}).get("h1", {}).get("sells", 0)),
-                "last_multiplier_posted": 0,
-                "active": True,
-                "trend_score": scores["trend_score"],
-                "safety_score": scores["safety_score"],
-                "dev_score": scores["dev_score"],
-                "rug_dna_score": rug["rug_dna_score"],
-                "risk_flags": rug["risk_flags"],
-                "raw_json": token["raw_json"],
-            }
-
             insert_token(record)
             await post_watchlist_alert({**token, **record})
-            print(f"Watchlisted token: {token['token_symbol']}")
-
+            print(f"Watchlisted: {token['token_symbol']}")
         except Exception as e:
             print(f"scan_for_new_tokens error for {ca}: {e}")
 
@@ -77,7 +103,6 @@ async def check_updates():
         pair_address = db_token.get("pair_address")
 
         current_pair = None
-
         if pair_address:
             current_pair = fetch_pair_by_address(pair_address)
 
@@ -85,11 +110,12 @@ async def check_updates():
             current_pair = fetch_best_pair_for_token(ca)
 
         if not current_pair:
-            print(f"Could not refresh token {db_token['token_symbol']}")
+            print(f"Could not refresh {db_token['token_symbol']}")
             continue
 
         current = normalize_pair(current_pair)
         current_mcap = safe_float(current.get("marketCap"))
+        initial_mcap = safe_float(db_token.get("initial_mcap", current_mcap))
         atl_mcap = min(safe_float(db_token.get("atl_mcap", current_mcap)), current_mcap)
         highest_mcap = max(safe_float(db_token.get("highest_mcap", 0)), current_mcap)
 
@@ -118,37 +144,32 @@ async def check_updates():
 
         merged = {**db_token, **updates, **current}
 
-        # promote watchlist -> public
-        if db_token.get("status") == "watchlist" and not db_token.get("posted_to_public", False):
-            if passes_filters(current) and rug["rug_dna_score"] <= 45:
-                try:
+        try:
+            if db_token.get("status") == "watchlist" and not db_token.get("posted_to_public", False):
+                if passes_public_filters(current) and rug["rug_dna_score"] <= 45:
                     await post_public_alert(merged)
                     updates["status"] = "promoted"
                     updates["posted_to_public"] = True
-                    print(f"Promoted token: {db_token['token_symbol']}")
-                except Exception as e:
-                    print(f"public promotion error: {e}")
+                    print(f"Promoted: {db_token['token_symbol']}")
 
-        # highest new milestone only
-        multiplier = 0
-        if safe_float(db_token.get("initial_mcap", 0)) > 0:
-            multiplier = current_mcap / safe_float(db_token.get("initial_mcap", 0))
+            if initial_mcap > 0:
+                multiplier = current_mcap / initial_mcap
+            else:
+                multiplier = 0
 
-        last_posted = safe_float(db_token.get("last_multiplier_posted", 0))
-        thresholds = [10, 5, 3, 2, 1.5]
+            last_posted = safe_float(db_token.get("last_multiplier_posted", 0))
+            next_threshold = choose_highest_new_threshold(multiplier, last_posted)
 
-        next_threshold = None
-        for threshold in thresholds:
-            if multiplier >= threshold and last_posted < threshold:
-                next_threshold = threshold
-                break
-
-        if next_threshold:
-            try:
+            if next_threshold:
                 await post_multiplier_update(merged, next_threshold)
                 updates["last_multiplier_posted"] = next_threshold
                 print(f"Posted milestone {next_threshold} for {db_token['token_symbol']}")
-            except Exception as e:
-                print(f"multiplier post error: {e}")
 
-        update_token(ca, updates)
+            update_token(ca, updates)
+
+        except Exception as e:
+            print(f"check_updates error for {db_token['token_symbol']}: {e}")
+            try:
+                update_token(ca, updates)
+            except Exception as inner:
+                print(f"update_token fallback error for {db_token['token_symbol']}: {inner}")
