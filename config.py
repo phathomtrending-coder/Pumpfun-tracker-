@@ -13,7 +13,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 SCAN_INTERVAL = int(os.getenv("SCAN_INTERVAL", "30"))
 
-CHANNEL_LINK = "https://t.me/EarlyPhantomTrending"
+CHANNEL_LINK = os.getenv("CHANNEL_LINK", "https://t.me/EarlyPhantomTrending")
 
 # Watchlist rules
 WATCHLIST_MIN_MCAP = float(os.getenv("WATCHLIST_MIN_MCAP", "4000"))
