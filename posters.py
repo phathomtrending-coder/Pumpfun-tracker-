@@ -34,7 +34,7 @@ async def post_watchlist_alert(token: dict):
         "trend_score": int(token.get("trend_score", 0)),
         "safety_score": int(token.get("safety_score", 0)),
         "dev_score": int(token.get("dev_score", 50)),
-        "rug_dna_score": int(token.get("rug_dna_score", 50)),
+        "rug_dna_score": int(token.get("rug_dna_score", 25)),
     }
 
     card_path = generate_initial_alert_card(token, scores)
@@ -74,7 +74,7 @@ async def post_public_alert(token: dict):
         "trend_score": int(token.get("trend_score", 0)),
         "safety_score": int(token.get("safety_score", 0)),
         "dev_score": int(token.get("dev_score", 50)),
-        "rug_dna_score": int(token.get("rug_dna_score", 50)),
+        "rug_dna_score": int(token.get("rug_dna_score", 25)),
     }
 
     card_path = generate_initial_alert_card(token, scores)
@@ -125,7 +125,7 @@ async def post_multiplier_update(token: dict, multiple: float):
         f"📡 <b>Trend Score:</b> {int(token.get('trend_score', 0))}/100\n"
         f"🛡️ <b>Safety Score:</b> {int(token.get('safety_score', 0))}/100\n"
         f"🕵️ <b>Dev Score:</b> {int(token.get('dev_score', 50))}/100\n"
-        f"🧬 <b>Rug DNA:</b> {int(token.get('rug_dna_score', 50))}/100\n\n"
+        f"🧬 <b>Rug DNA:</b> {int(token.get('rug_dna_score', 25))}/100\n\n"
         f"📋 <b>CA:</b>\n<code>{token['contract_address']}</code>\n\n"
         f"👻 <a href='{CHANNEL_LINK}'>Early Phantom Trending</a>"
     )
