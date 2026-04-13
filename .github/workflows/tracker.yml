@@ -15,14 +15,22 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       SCAN_INTERVAL: "30"
-      WATCHLIST_MIN_MCAP: "4000"
-      WATCHLIST_MAX_MCAP: "35000"
-      WATCHLIST_MIN_VOL_5M: "300"
-      WATCHLIST_MIN_BUYS_1H: "10"
-      PUBLIC_MIN_MCAP: "8000"
-      PUBLIC_MAX_MCAP: "45000"
-      PUBLIC_MIN_VOL_5M: "1200"
-      PUBLIC_MIN_BUYS_1H: "25"
+
+      WATCHLIST_MIN_MCAP: "2000"
+      WATCHLIST_MAX_MCAP: "90000"
+      WATCHLIST_MIN_VOL_5M: "25"
+      WATCHLIST_MIN_VOL_1H: "2500"
+      WATCHLIST_MIN_BUYS_1H: "5"
+      WATCHLIST_MIN_LIQ: "2000"
+
+      PUBLIC_MIN_MCAP: "6000"
+      PUBLIC_MAX_MCAP: "120000"
+      PUBLIC_MIN_VOL_5M: "100"
+      PUBLIC_MIN_VOL_1H: "12000"
+      PUBLIC_MIN_BUYS_1H: "12"
+      PUBLIC_MIN_LIQ: "5000"
+      PUBLIC_MIN_BUY_SELL_RATIO: "1.10"
+      PUBLIC_MAX_RUG_DNA: "55"
 
     steps:
       - name: Checkout repo
@@ -38,3 +46,4 @@ jobs:
 
       - name: Run tracker once
         run: python run_once.py
+  
