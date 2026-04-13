@@ -41,79 +41,60 @@ def build_scores(token: dict) -> dict:
     safety_score = 0
     dev_score = 50
 
-    if 5000 <= mcap <= 90000:
-        trend_score += 18
-    elif 90000 < mcap <= 150000:
-        trend_score += 8
+    if 1000 <= mcap <= 500000:
+        trend_score += 10
 
-    if liq >= 15000:
-        trend_score += 12
-    elif liq >= 7000:
-        trend_score += 8
+    if liq >= 10000:
+        trend_score += 10
     elif liq >= 3000:
-        trend_score += 4
-
-    if vol_1h >= 50000:
-        trend_score += 22
-    elif vol_1h >= 20000:
-        trend_score += 16
-    elif vol_1h >= 8000:
-        trend_score += 10
-    elif vol_1h >= 3000:
-        trend_score += 5
-
-    if vol_5m >= 3000:
-        trend_score += 10
-    elif vol_5m >= 1000:
-        trend_score += 7
-    elif vol_5m >= 200:
-        trend_score += 4
-
-    if buys_1h >= 80:
-        trend_score += 16
-    elif buys_1h >= 30:
-        trend_score += 11
-    elif buys_1h >= 10:
         trend_score += 6
-
-    if buy_ratio >= 2.0:
-        trend_score += 12
-    elif buy_ratio >= 1.4:
-        trend_score += 9
-    elif buy_ratio >= 1.1:
-        trend_score += 5
-
-    if price_change_1h >= 100:
-        trend_score += 10
-    elif price_change_1h >= 30:
-        trend_score += 6
-    elif price_change_1h > 0:
+    elif liq >= 500:
         trend_score += 3
+
+    if vol_1h >= 20000:
+        trend_score += 18
+    elif vol_1h >= 5000:
+        trend_score += 10
+    elif vol_1h >= 1000:
+        trend_score += 5
+
+    if vol_5m >= 1000:
+        trend_score += 8
+    elif vol_5m >= 100:
+        trend_score += 4
+
+    if buys_1h >= 20:
+        trend_score += 12
+    elif buys_1h >= 5:
+        trend_score += 6
+    elif buys_1h >= 1:
+        trend_score += 2
+
+    if buy_ratio >= 1.5:
+        trend_score += 8
+    elif buy_ratio >= 1.0:
+        trend_score += 4
+
+    if price_change_1h > 0:
+        trend_score += 5
 
     trend_score = min(100, trend_score)
 
-    if liq >= 15000:
-        safety_score += 20
-    elif liq >= 7000:
+    if liq >= 10000:
         safety_score += 15
     elif liq >= 3000:
-        safety_score += 8
-
-    if vol_1h >= 12000:
-        safety_score += 15
-    elif vol_1h >= 5000:
         safety_score += 10
+    elif liq >= 500:
+        safety_score += 5
 
-    if buys_1h >= 12:
+    if vol_1h >= 1000:
         safety_score += 10
-    if buys_1h > sells_1h:
-        safety_score += 15
-    if buy_ratio >= 1.2:
-        safety_score += 15
-    if vol_5m >= 100:
+    if buys_1h >= 1:
+        safety_score += 5
+    if buy_ratio >= 1.0:
         safety_score += 8
-    if mcap >= 6000:
-        safety_score += 7
+    if mcap >= 1500:
+        safety_score += 5
 
     safety_score = min(100, safety_score)
 
@@ -127,33 +108,32 @@ def build_scores(token: dict) -> dict:
 def build_rug_dna(token: dict) -> dict:
     mcap = safe_float(token.get("marketCap"))
     liq = safe_float(token.get("liquidity", {}).get("usd"))
-    vol_5m = safe_float(token.get("volume", {}).get("m5"))
     vol_1h = safe_float(token.get("volume", {}).get("h1"))
     buys_1h = safe_int(token.get("txns", {}).get("h1", {}).get("buys"))
     sells_1h = safe_int(token.get("txns", {}).get("h1", {}).get("sells"))
 
     risk_flags = []
-    rug_dna_score = 35
+    rug_dna_score = 30
 
     if sells_1h > buys_1h:
-        rug_dna_score += 15
+        rug_dna_score += 10
         risk_flags.append("sell_pressure")
 
-    if mcap < 3000:
-        rug_dna_score += 10
+    if mcap < 1000:
+        rug_dna_score += 8
         risk_flags.append("microcap")
 
-    if liq < 2000:
+    if liq < 500:
         rug_dna_score += 15
         risk_flags.append("thin_liquidity")
 
-    if vol_5m < 25 and vol_1h < 2500:
-        rug_dna_score += 12
+    if vol_1h < 500:
+        rug_dna_score += 10
         risk_flags.append("thin_volume")
 
-    if buys_1h <= 3:
-        rug_dna_score += 10
-        risk_flags.append("weak_buy_activity")
+    if buys_1h == 0:
+        rug_dna_score += 8
+        risk_flags.append("no_buy_activity")
 
     rug_dna_score = max(0, min(100, rug_dna_score))
 
@@ -166,19 +146,12 @@ def passes_watchlist_filters(token: dict) -> bool:
     try:
         mcap = safe_float(token.get("marketCap"))
         liq = safe_float(token.get("liquidity", {}).get("usd"))
-        vol_5m = safe_float(token.get("volume", {}).get("m5"))
-        vol_1h = safe_float(token.get("volume", {}).get("h1"))
-        buys_1h = safe_int(token.get("txns", {}).get("h1", {}).get("buys"))
 
         if mcap < WATCHLIST_MIN_MCAP:
             return False
         if mcap > WATCHLIST_MAX_MCAP:
             return False
         if liq < WATCHLIST_MIN_LIQ:
-            return False
-        if vol_1h < WATCHLIST_MIN_VOL_1H:
-            return False
-        if vol_5m < WATCHLIST_MIN_VOL_5M and buys_1h < WATCHLIST_MIN_BUYS_1H:
             return False
 
         return True
@@ -212,9 +185,9 @@ def passes_public_filters(token: dict) -> bool:
             return False
 
         scores = build_scores(token)
-        if scores["trend_score"] < 32:
+        if scores["trend_score"] < 10:
             return False
-        if scores["safety_score"] < 28:
+        if scores["safety_score"] < 8:
             return False
 
         return True
