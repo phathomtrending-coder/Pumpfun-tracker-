@@ -9,13 +9,11 @@ from config import (
     PUBLIC_MIN_BUYS_1H,
 )
 
-
 def safe_float(value, default=0.0):
     try:
         return float(value)
     except Exception:
         return default
-
 
 def safe_int(value, default=0):
     try:
@@ -23,14 +21,12 @@ def safe_int(value, default=0):
     except Exception:
         return default
 
-
 def build_scores(token: dict) -> dict:
     mcap = safe_float(token.get("marketCap"))
     vol_5m = safe_float(token.get("volume", {}).get("m5"))
     vol_1h = safe_float(token.get("volume", {}).get("h1"))
     buys_1h = safe_int(token.get("txns", {}).get("h1", {}).get("buys"))
     sells_1h = safe_int(token.get("txns", {}).get("h1", {}).get("sells"))
-    liq_usd = safe_float(token.get("liquidity", {}).get("usd"))
 
     buy_ratio = buys_1h / max(sells_1h, 1)
 
@@ -91,9 +87,6 @@ def build_scores(token: dict) -> dict:
     if sells_1h > 0:
         safety_score += 10
 
-    if liq_usd >= 5000:
-        safety_score += 10
-
     safety_score = min(100, safety_score)
 
     return {
@@ -103,19 +96,17 @@ def build_scores(token: dict) -> dict:
         "buy_ratio": round(buy_ratio, 2),
     }
 
-
 def build_rug_dna(token: dict) -> dict:
     mcap = safe_float(token.get("marketCap"))
     vol_5m = safe_float(token.get("volume", {}).get("m5"))
     buys_1h = safe_int(token.get("txns", {}).get("h1", {}).get("buys"))
     sells_1h = safe_int(token.get("txns", {}).get("h1", {}).get("sells"))
-    liq_usd = safe_float(token.get("liquidity", {}).get("usd"))
 
     risk_flags = []
-    rug_dna_score = 25  # lower is better
+    rug_dna_score = 50
 
     if sells_1h > buys_1h:
-        rug_dna_score += 20
+        rug_dna_score += 15
         risk_flags.append("sell_pressure")
 
     if mcap < 5000:
@@ -130,17 +121,12 @@ def build_rug_dna(token: dict) -> dict:
         rug_dna_score += 10
         risk_flags.append("weak_buy_activity")
 
-    if liq_usd < 4000:
-        rug_dna_score += 10
-        risk_flags.append("low_liquidity")
-
     rug_dna_score = max(0, min(100, rug_dna_score))
 
     return {
         "rug_dna_score": rug_dna_score,
         "risk_flags": risk_flags,
     }
-
 
 def passes_watchlist_filters(token: dict) -> bool:
     try:
@@ -161,8 +147,7 @@ def passes_watchlist_filters(token: dict) -> bool:
     except Exception:
         return False
 
-
-def passes_filters(token: dict) -> bool:
+def passes_public_filters(token: dict) -> bool:
     try:
         mcap = safe_float(token.get("marketCap"))
         vol_5m = safe_float(token.get("volume", {}).get("m5"))
@@ -181,13 +166,9 @@ def passes_filters(token: dict) -> bool:
             return False
 
         scores = build_scores(token)
-        rug = build_rug_dna(token)
-
         if scores["trend_score"] < 55:
             return False
         if scores["safety_score"] < 50:
-            return False
-        if rug["rug_dna_score"] > 45:
             return False
 
         return True
