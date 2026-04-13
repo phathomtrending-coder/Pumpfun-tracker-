@@ -16,13 +16,19 @@ SCAN_INTERVAL = int(os.getenv("SCAN_INTERVAL", "30"))
 CHANNEL_LINK = "https://t.me/EarlyPhantomTrending"
 
 # Watchlist rules
-WATCHLIST_MIN_MCAP = float(os.getenv("WATCHLIST_MIN_MCAP", "4000"))
-WATCHLIST_MAX_MCAP = float(os.getenv("WATCHLIST_MAX_MCAP", "35000"))
-WATCHLIST_MIN_VOL_5M = float(os.getenv("WATCHLIST_MIN_VOL_5M", "300"))
-WATCHLIST_MIN_BUYS_1H = int(os.getenv("WATCHLIST_MIN_BUYS_1H", "10"))
+WATCHLIST_MIN_MCAP = float(os.getenv("WATCHLIST_MIN_MCAP", "2000"))
+WATCHLIST_MAX_MCAP = float(os.getenv("WATCHLIST_MAX_MCAP", "90000"))
+WATCHLIST_MIN_VOL_5M = float(os.getenv("WATCHLIST_MIN_VOL_5M", "25"))
+WATCHLIST_MIN_VOL_1H = float(os.getenv("WATCHLIST_MIN_VOL_1H", "2500"))
+WATCHLIST_MIN_BUYS_1H = int(os.getenv("WATCHLIST_MIN_BUYS_1H", "5"))
+WATCHLIST_MIN_LIQ = float(os.getenv("WATCHLIST_MIN_LIQ", "2000"))
 
 # Public promotion rules
-PUBLIC_MIN_MCAP = float(os.getenv("PUBLIC_MIN_MCAP", "8000"))
-PUBLIC_MAX_MCAP = float(os.getenv("PUBLIC_MAX_MCAP", "45000"))
-PUBLIC_MIN_VOL_5M = float(os.getenv("PUBLIC_MIN_VOL_5M", "1200"))
-PUBLIC_MIN_BUYS_1H = int(os.getenv("PUBLIC_MIN_BUYS_1H", "25"))
+PUBLIC_MIN_MCAP = float(os.getenv("PUBLIC_MIN_MCAP", "6000"))
+PUBLIC_MAX_MCAP = float(os.getenv("PUBLIC_MAX_MCAP", "120000"))
+PUBLIC_MIN_VOL_5M = float(os.getenv("PUBLIC_MIN_VOL_5M", "100"))
+PUBLIC_MIN_VOL_1H = float(os.getenv("PUBLIC_MIN_VOL_1H", "12000"))
+PUBLIC_MIN_BUYS_1H = int(os.getenv("PUBLIC_MIN_BUYS_1H", "12"))
+PUBLIC_MIN_LIQ = float(os.getenv("PUBLIC_MIN_LIQ", "5000"))
+PUBLIC_MIN_BUY_SELL_RATIO = float(os.getenv("PUBLIC_MIN_BUY_SELL_RATIO", "1.10"))
+PUBLIC_MAX_RUG_DNA = int(os.getenv("PUBLIC_MAX_RUG_DNA", "55"))
