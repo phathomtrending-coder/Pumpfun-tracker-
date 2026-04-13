@@ -10,7 +10,6 @@ DEX_SEARCH_URL = "https://api.dexscreener.com/latest/dex/search"
 DEX_PAIR_URL = "https://api.dexscreener.com/latest/dex/pairs/solana/{pair_address}"
 DEX_TOKEN_PAIRS_URL = "https://api.dexscreener.com/token-pairs/v1/solana/{token_address}"
 
-
 def fetch_pairs():
     pairs = []
     seen = set()
@@ -34,7 +33,6 @@ def fetch_pairs():
     print(f"Fetched {len(pairs)} unique pairs")
     return pairs
 
-
 def fetch_pair_by_address(pair_address: str):
     try:
         url = DEX_PAIR_URL.format(pair_address=pair_address)
@@ -46,7 +44,6 @@ def fetch_pair_by_address(pair_address: str):
     except Exception as e:
         print(f"fetch_pair_by_address error for {pair_address}: {e}")
         return None
-
 
 def fetch_best_pair_for_token(token_address: str):
     try:
@@ -68,12 +65,13 @@ def fetch_best_pair_for_token(token_address: str):
         print(f"fetch_best_pair_for_token error for {token_address}: {e}")
         return None
 
-
 def normalize_pair(pair: dict) -> dict:
     base = pair.get("baseToken", {}) or {}
     txns = pair.get("txns", {}) or {}
     volume = pair.get("volume", {}) or {}
     labels = pair.get("labels", []) or []
+    liquidity = pair.get("liquidity", {}) or {}
+    price_change = pair.get("priceChange", {}) or {}
 
     contract_address = base.get("address", "")
     symbol = base.get("symbol", "UNKNOWN")
@@ -95,5 +93,7 @@ def normalize_pair(pair: dict) -> dict:
         "volume": volume,
         "txns": txns,
         "labels": labels,
+        "liquidity": liquidity,
+        "priceChange": price_change,
         "raw_json": pair,
     }
