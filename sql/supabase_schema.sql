@@ -1,24 +1,9 @@
-create table if not exists tracked_tokens (
-  id bigint generated always as identity primary key,
-  token_name text,
-  token_symbol text,
-  contract_address text unique not null,
-  pair_address text,
-  dex_url text,
-  pumpfun_url text,
-  holders_url text,
-  first_seen_at timestamptz default now(),
-  launched_at timestamptz,
-  alert_posted boolean default false,
-  initial_mcap numeric default 0,
-  atl_mcap numeric default 0,
-  current_mcap numeric default 0,
-  highest_mcap numeric default 0,
-  volume_5m numeric default 0,
-  volume_1h numeric default 0,
-  buys_1h integer default 0,
-  sells_1h integer default 0,
-  last_multiplier_posted numeric default 0,
-  active boolean default true,
-  raw_json jsonb
-);
+alter table tracked_tokens
+add column if not exists status text default 'watchlist',
+add column if not exists posted_to_watchlist boolean default false,
+add column if not exists posted_to_public boolean default false,
+add column if not exists trend_score integer default 0,
+add column if not exists safety_score integer default 0,
+add column if not exists dev_score integer default 50,
+add column if not exists rug_dna_score integer default 50,
+add column if not exists risk_flags jsonb default '[]'::jsonb;
