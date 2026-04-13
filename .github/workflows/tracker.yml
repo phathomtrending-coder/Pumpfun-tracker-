@@ -1,15 +1,48 @@
-WATCHLIST_MIN_MCAP: "1000"
-WATCHLIST_MAX_MCAP: "150000"
-WATCHLIST_MIN_VOL_5M: "10"
-WATCHLIST_MIN_VOL_1H: "1000"
-WATCHLIST_MIN_BUYS_1H: "2"
-WATCHLIST_MIN_LIQ: "1000"
+name: Pumpfun Tracker
 
-PUBLIC_MIN_MCAP: "4000"
-PUBLIC_MAX_MCAP: "150000"
-PUBLIC_MIN_VOL_5M: "50"
-PUBLIC_MIN_VOL_1H: "6000"
-PUBLIC_MIN_BUYS_1H: "8"
-PUBLIC_MIN_LIQ: "3000"
-PUBLIC_MIN_BUY_SELL_RATIO: "0.95"
-PUBLIC_MAX_RUG_DNA: "65"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+jobs:
+  run-tracker:
+    runs-on: ubuntu-latest
+    env:
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      PUBLIC_CHANNEL_ID: ${{ secrets.PUBLIC_CHANNEL_ID }}
+      WATCHLIST_CHANNEL_ID: ${{ secrets.WATCHLIST_CHANNEL_ID }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SCAN_INTERVAL: "30"
+
+      WATCHLIST_MIN_MCAP: "1000"
+      WATCHLIST_MAX_MCAP: "150000"
+      WATCHLIST_MIN_VOL_5M: "10"
+      WATCHLIST_MIN_VOL_1H: "1000"
+      WATCHLIST_MIN_BUYS_1H: "2"
+      WATCHLIST_MIN_LIQ: "1000"
+
+      PUBLIC_MIN_MCAP: "4000"
+      PUBLIC_MAX_MCAP: "150000"
+      PUBLIC_MIN_VOL_5M: "50"
+      PUBLIC_MIN_VOL_1H: "6000"
+      PUBLIC_MIN_BUYS_1H: "8"
+      PUBLIC_MIN_LIQ: "3000"
+      PUBLIC_MIN_BUY_SELL_RATIO: "0.95"
+      PUBLIC_MAX_RUG_DNA: "65"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tracker once
+        run: python run_once.py
