@@ -44,6 +44,11 @@ jobs:
       PRETREND_MIN_SCORE_PUBLIC: "55"
       PRETREND_MIN_SCORE_WATCHLIST: "35"
 
+      RUGCHECK_ENABLED: "false"
+      RUGCHECK_TIMEOUT: "12"
+      RUGCHECK_TOKEN_URL_TEMPLATE: ""
+      RUGCHECK_API_KEY: ${{ secrets.RUGCHECK_API_KEY }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
