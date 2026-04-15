@@ -12,6 +12,7 @@ from filters import (
     build_scores,
     build_rug_dna,
 )
+from rugcheck import rugcheck_scan
 from storage import (
     get_token_by_ca,
     insert_token,
@@ -19,6 +20,8 @@ from storage import (
     get_active_tokens,
     get_board_state,
     upsert_board_state,
+    was_event_posted,
+    mark_event_posted,
 )
 from posters import (
     post_watchlist_alert,
@@ -72,6 +75,24 @@ def mark_board_posted(board_name: str):
     upsert_board_state(board_name, now_iso)
 
 
+def improved_enough_for_public(db_token: dict, current: dict) -> bool:
+    first_mcap = safe_float(db_token.get("initial_mcap", 0))
+    current_mcap = safe_float(current.get("marketCap", 0))
+    first_vol_1h = safe_float(db_token.get("volume_1h", 0))
+    current_vol_1h = safe_float(current.get("volume", {}).get("h1", 0))
+    buys = int(current.get("txns", {}).get("h1", {}).get("buys", 0) or 0)
+    sells = int(current.get("txns", {}).get("h1", {}).get("sells", 0) or 0)
+
+    if first_mcap <= 0:
+        return False
+
+    mcap_gain = current_mcap / first_mcap
+    vol_improved = current_vol_1h >= max(first_vol_1h, 1)
+    buy_pressure = buys >= sells
+
+    return mcap_gain >= 1.25 and vol_improved and buy_pressure
+
+
 async def scan_for_new_tokens():
     pairs = fetch_pairs()
 
@@ -101,7 +122,7 @@ async def scan_for_new_tokens():
             "pumpfun_url": token["pumpfun_url"],
             "holders_url": token["holders_url"],
             "status": "watchlist",
-            "posted_to_watchlist": True,
+            "posted_to_watchlist": False,
             "posted_to_public": False,
             "initial_mcap": current_mcap,
             "atl_mcap": current_mcap,
@@ -124,8 +145,12 @@ async def scan_for_new_tokens():
 
         try:
             insert_token(record)
-            await post_watchlist_alert({**token, **record})
-            print(f"Watchlisted: {token['token_symbol']}")
+
+            if not was_event_posted(ca, "WATCHLIST_ENTRY", "premium"):
+                await post_watchlist_alert({**token, **record})
+                mark_event_posted(ca, token["token_symbol"], "WATCHLIST_ENTRY", "premium")
+                update_token(ca, {"posted_to_watchlist": True})
+                print(f"Watchlisted: {token['token_symbol']}")
         except Exception as e:
             print(f"scan_for_new_tokens error for {ca}: {e}")
 
@@ -182,22 +207,36 @@ async def check_updates():
         merged = {**db_token, **updates, **current}
 
         try:
+            # Premium -> Public promotion
             if db_token.get("status") == "watchlist" and not db_token.get("posted_to_public", False):
-                if passes_public_filters(current):
-                    await post_public_alert(merged)
-                    updates["status"] = "promoted"
-                    updates["posted_to_public"] = True
-                    print(f"Promoted: {db_token['token_symbol']}")
+                if passes_public_filters(current) and improved_enough_for_public(db_token, current):
+                    rc = rugcheck_scan(ca)
+                    updates["rugcheck_status"] = rc.get("status", "unknown")
+                    updates["rugcheck_passed"] = rc.get("passed", False)
 
+                    if rc.get("passed", False):
+                        if not was_event_posted(ca, "PUBLIC_ENTRY", "public"):
+                            await post_public_alert(merged)
+                            mark_event_posted(ca, db_token["token_symbol"], "PUBLIC_ENTRY", "public")
+                            updates["status"] = "promoted"
+                            updates["posted_to_public"] = True
+                            print(f"Promoted: {db_token['token_symbol']}")
+                    else:
+                        print(f"RugCheck blocked public post: {db_token['token_symbol']} ({rc.get('status')})")
+
+            # Multipliers only after public promotion
             if db_token.get("status") == "promoted" or updates.get("status") == "promoted":
                 multiplier = current_mcap / initial_mcap if initial_mcap > 0 else 0
                 last_posted = safe_float(db_token.get("last_multiplier_posted", 0))
                 next_threshold = choose_highest_new_threshold(multiplier, last_posted)
 
                 if next_threshold:
-                    await post_multiplier_update(merged, next_threshold)
-                    updates["last_multiplier_posted"] = next_threshold
-                    print(f"Posted milestone {next_threshold} for {db_token['token_symbol']}")
+                    event_type = f"MULTIPLIER_{next_threshold}"
+                    if not was_event_posted(ca, event_type, "public"):
+                        await post_multiplier_update(merged, next_threshold)
+                        mark_event_posted(ca, db_token["token_symbol"], event_type, "public")
+                        updates["last_multiplier_posted"] = next_threshold
+                        print(f"Posted milestone {next_threshold} for {db_token['token_symbol']}")
 
             if current_mcap < max(initial_mcap * 0.25, 1500):
                 updates["status"] = "dead"
