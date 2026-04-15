@@ -33,15 +33,6 @@ def get_active_tokens():
     )
     return result.data or []
 
-def get_tokens_by_status(status: str):
-    result = (
-        supabase.table("tracked_tokens")
-        .select("*")
-        .eq("status", status)
-        .execute()
-    )
-    return result.data or []
-
 def get_board_state(board_name: str):
     result = (
         supabase.table("board_state")
@@ -66,3 +57,24 @@ def upsert_board_state(board_name: str, last_posted_at: str):
         .insert({"board_name": board_name, "last_posted_at": last_posted_at})
         .execute()
     )
+
+def was_event_posted(token_address: str, event_type: str, destination: str) -> bool:
+    result = (
+        supabase.table("posted_events")
+        .select("id")
+        .eq("token_address", token_address)
+        .eq("event_type", event_type)
+        .eq("destination", destination)
+        .limit(1)
+        .execute()
+    )
+    return bool(result.data)
+
+def mark_event_posted(token_address: str, symbol: str, event_type: str, destination: str):
+    payload = {
+        "token_address": token_address,
+        "token_symbol": symbol,
+        "event_type": event_type,
+        "destination": destination,
+    }
+    return supabase.table("posted_events").insert(payload).execute()
